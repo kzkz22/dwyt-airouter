@@ -1,0 +1,18 @@
+[Unit]
+Description=dwyt llama-swap (the GPU queue of the AI router)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=airouter
+Group=airouter
+# UNRAID_API_KEY (Unraid starter); the starter processes inherit it from llama-swap
+EnvironmentFile=-/etc/dwyt-airouter/airouter.env
+# SWAP_LISTEN, written by `dwyt-airouter generate`
+EnvironmentFile=/etc/dwyt-airouter/generated/ports.env
+ExecStart=/opt/dwyt-airouter/bin/llama-swap --config /etc/dwyt-airouter/generated/llama-swap.yaml --listen ${SWAP_LISTEN} --watch-config
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

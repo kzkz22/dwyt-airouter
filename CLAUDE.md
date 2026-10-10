@@ -8,7 +8,22 @@ generates the LiteLLM and llama-swap configs and the GPU host's download list.
 Lessons to keep from the old setup: a Whisper job is ONE long streamed request through llama-swap (so the GPU
 is not swapped away mid-job); llama-swap selectors never retry, which is why LiteLLM stays for fallback.
 
-Status: planning only. Source of truth: `dwyt-docs`. License: MIT.
+Status: round 2 implemented; verified locally with the real llama-swap v262 binary, a fake `docker` and the
+real (faked-ML) Whisper worker; not yet run against a real GPU host. Source of truth: `dwyt-docs`. License: MIT.
+
+## Layout
+
+| Path | Role |
+| --- | --- |
+| `dwyt_airouter/config.py` | `models.yaml` reader with strict validation (Hungarian errors naming the key) |
+| `dwyt_airouter/generate.py` | llama-swap.yaml, litellm.yaml, models.ini (llama-server router presets), downloads.json, ports.env |
+| `dwyt_airouter/starters.py` | Docker (local / `-H ssh://`) and Unraid GraphQL: state/start/stop of existing containers |
+| `dwyt_airouter/container.py` | llama-swap `cmd`/`cmdStop`: wake, stop other GPU containers, start, stay alive while running |
+| `dwyt_airouter/wake.py` | Wake-on-LAN magic packet, wait until reachable |
+| `deploy/` | systemd units (`dwyt-llama-swap`, `dwyt-litellm`, user `airouter`), env examples |
+
+Pinned: llama-swap v262 (docs, CI `-validate`), LiteLLM 1.104.2. `llama-swap.yaml` keeps `${PID}` literal for
+llama-swap's macro. Without LiteLLM, stable names become llama-server presets (no fallback).
 
 ## Conventions
 

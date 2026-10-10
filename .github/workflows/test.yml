@@ -1,0 +1,35 @@
+name: test
+on:
+  push:
+  pull_request:
+jobs:
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest]
+        python: ["3.11", "3.13"]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: ${{ matrix.python }}
+      - run: uv venv
+      - run: uv pip install -e ".[test]"
+      - run: uv run --no-sync ruff check --select F,E,W dwyt_airouter tests
+      - name: llama-swap (the version the docs install) to validate the generated config
+        run: |
+          curl -sSfL https://github.com/mostlygeek/llama-swap/releases/download/v262/llama-swap_262_linux_amd64.tar.gz | tar xz -C /tmp llama-swap
+          echo "LLAMA_SWAP_BIN=/tmp/llama-swap" >> "$GITHUB_ENV"
+      - run: uv run --no-sync pytest -q
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.11"
+      - run: uv venv
+      - run: uv pip install pip-audit pip
+      - run: uv run --no-sync pip-audit .   # the project's own dependencies

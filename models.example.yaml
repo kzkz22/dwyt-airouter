@@ -1,0 +1,86 @@
+# /etc/dwyt-airouter/models.yaml - az AI-router egyetlen modell-leíró fájlja.
+# Ebből készül (dwyt-airouter generate): a llama-swap és a LiteLLM beállítása, a llama-server
+# presetjei (models.ini) és a GPU-gép letöltési listája (downloads.json).
+version: 1
+
+# A GPU-gép, és hogyan indítja a router a konténereit.
+gpu_host:
+  starter: unraid              # docker (ugyanez a gép) | docker-ssh (Linux-gép SSH-n) | unraid (Unraid API)
+  address: 192.168.1.20        # ezen a címen érhetők el a konténerek portjai (docker esetén 127.0.0.1)
+  # ssh: root@192.168.1.20     # docker-ssh: kulcsos SSH-belépés a llama-swap felhasználójának
+  unraid_url: http://192.168.1.20   # unraid: a kulcs az UNRAID_API_KEY (airouter.env)
+  # unraid_insecure_tls: true  # önaláírt HTTPS-tanúsítványnál
+  # wake:                      # Wake-on-LAN, ha a GPU-gép alszik vagy ki van kapcsolva
+  #   mac: "aa:bb:cc:dd:ee:ff"
+  #   broadcast: 192.168.1.255
+  #   wait_s: 240              # ennyit vár az ébredésre
+  # other_gpu_containers: []   # más GPU-s konténerek, amelyeket indítás előtt le kell állítani
+  start_timeout_s: 180         # egy konténer indulása (a modell betöltése) legfeljebb ennyi
+
+# A llama-server konténer (router mód: egy szerver, a presetek a models.ini-ből).
+llama_server:
+  container: dwyt-llama        # a konténer neve a GPU-gépen
+  port: 8001
+  args:                        # minden modellre érvényes kapcsolók (models.ini [*] szakasza)
+    n-gpu-layers: 999
+  # ttl: 0                     # tétlen leállítás másodpercben (0 = marad)
+
+# A Whisper GPU-worker konténer. Kikapcsolás: whisper: false
+whisper:
+  container: dwyt-whisper
+  port: 8766
+  models: [large-v3, large-v3-turbo]
+  diarization: true            # a beszélőfelismerő modell is letöltődik (HF_TOKEN kell hozzá)
+  prefetch:                    # további Hugging Face-repók előre (például a magyar igazítómodell)
+    - jonatasgrosman/wav2vec2-large-xlsr-53-hungarian
+  ttl: 600                     # 10 perc tétlenség után leáll, és visszaadja a GPU-t
+
+# Helyi modellek: a név a preset neve és a kliensek modellneve is.
+# file: szervezet/repó/fájl a Hugging Face-en; a letöltés a GPU-gép modellmappájába megy.
+local_models:
+  - name: Qwen3.6-35B-A3B-Gnrl
+    file: unsloth/Qwen3.6-35B-A3B-GGUF/Qwen3.6-35B-A3B-UD-IQ4_NL.gguf
+    args: {ctx-size: 131072, temp: 0.7, top-p: 0.8, top-k: 20}
+    max_input_tokens: 131072
+    max_output_tokens: 32768
+  - name: Qwen3.6-35B-A3B-Code
+    file: unsloth/Qwen3.6-35B-A3B-GGUF/Qwen3.6-35B-A3B-UD-IQ4_NL.gguf
+    args: {ctx-size: 131072, temp: 0.6, top-p: 0.95, top-k: 20}
+    max_input_tokens: 131072
+    max_output_tokens: 32768
+
+# Felhős modellek a LiteLLM-en át (a kulcs a litellm.env-ben).
+cloud:
+  api_key_env: OPENROUTER_API_KEY
+  models:
+    - name: cloud/qwen3.8-flash
+      model: openrouter/qwen/qwen3.8-flash
+    - name: cloud/qwen3.8-flash-gyors      # ugyanaz gondolkodás nélkül (összefoglalóhoz)
+      model: openrouter/qwen/qwen3.8-flash
+      thinking: false
+
+# Stabil nevek a klienseknek: célmodell, gondolkodás ki/be, tartalék (csak LiteLLM-mel).
+names:
+  - name: auto
+    model: Qwen3.6-35B-A3B-Code
+    fallback: cloud/qwen3.8-flash
+  - name: osszefoglalo           # nyilvános források: helyi, ha nem megy, felhő
+    model: Qwen3.6-35B-A3B-Gnrl
+    thinking: false
+    fallback: cloud/qwen3.8-flash-gyors
+  - name: osszefoglalo-helyi     # saját felvételek: csak helyi, felhős tartalék nélkül
+    model: Qwen3.6-35B-A3B-Gnrl
+    thinking: false
+
+# További GPU-s konténerek ugyanabban a sorban (például a régi rendszer workere).
+# extra_containers:
+#   - entry: yt-transcribe-gpu
+#     container: yt-transcribe-gpu
+#     port: 8766
+#     ttl: 600
+
+litellm:
+  enabled: true                # false: csak llama-swap; a stabil nevek ekkor presetek lesznek
+  port: 4000
+llama_swap:
+  port: 8080

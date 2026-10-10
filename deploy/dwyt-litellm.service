@@ -1,0 +1,18 @@
+[Unit]
+Description=dwyt LiteLLM (stable model names, cloud fallback)
+After=network-online.target dwyt-llama-swap.service
+Wants=network-online.target
+
+[Service]
+User=airouter
+Group=airouter
+# OPENROUTER_API_KEY (or the key named in models.yaml cloud.api_key_env), LITELLM_MASTER_KEY
+EnvironmentFile=/etc/dwyt-airouter/litellm.env
+# LITELLM_HOST, LITELLM_PORT, written by `dwyt-airouter generate`
+EnvironmentFile=/etc/dwyt-airouter/generated/ports.env
+ExecStart=/opt/dwyt-airouter/litellm/bin/litellm --config /etc/dwyt-airouter/generated/litellm.yaml --host ${LITELLM_HOST} --port ${LITELLM_PORT}
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

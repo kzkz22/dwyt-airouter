@@ -149,7 +149,7 @@ A csere naplója: `journalctl -u dwyt-llama-swap -f`. A webes felület: `http://
 A futtató gépén:
 
 ```bash
-uv tool install --force git+https://github.com/kzkz22/dwyt-runner   # legalább 0.2.0 kell (dwyt-runner --version)
+uv tool install --force git+https://github.com/kzkz22/dwyt-runner   # a legfrissebb változat
 dwyt-runner config set whisper_url http://AI-ROUTER-IP:8080/upstream/whisper
 dwyt-runner config set llm_url http://AI-ROUTER-IP:4000/v1
 dwyt-runner config set llm_key A-LITELLM_MASTER_KEY-ÉRTÉKE

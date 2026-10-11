@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "dwyt-airouter"
-version = "0.1.0"
+version = "0.1.1"
 description = "dwyt AI router: models.yaml -> llama-swap/LiteLLM configs, GPU container starters"
 readme = "README.md"
 license = "MIT"

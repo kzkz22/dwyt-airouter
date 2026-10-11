@@ -3,7 +3,8 @@
 ## A program
 
 ```bash
-/opt/dwyt-airouter/venv/bin/pip install --upgrade git+https://github.com/kzkz22/dwyt-airouter
+/opt/dwyt-airouter/venv/bin/pip install --force-reinstall --no-deps git+https://github.com/kzkz22/dwyt-airouter
+dwyt-airouter --version        # az új változat száma
 dwyt-airouter generate         # új változat új beállításokat írhat
 systemctl restart dwyt-litellm # ha a generate szerint a litellm.yaml változott
 ```

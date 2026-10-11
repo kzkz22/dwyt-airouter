@@ -18,6 +18,7 @@ from .config import DEFAULT_CONFIG, ConfigError, load, secret
 from .starters import StarterError, starter_for
 
 DEFAULT_OUT = "/etc/dwyt-airouter/generated"
+LLAMA_SWAP = "/opt/dwyt-airouter/bin/llama-swap"
 
 
 def _check(cfg) -> int:
@@ -46,8 +47,8 @@ def _check(cfg) -> int:
         report(bool(secret(cfg, "UNRAID_API_KEY")), "UNRAID_API_KEY (környezet vagy airouter.env)")
     if cfg.litellm and cfg.cloud_models:
         print(f"         a felhős kulcs ({cfg.cloud_key_env}) és a LITELLM_MASTER_KEY a litellm.env-ben legyen")
-    if not shutil.which("llama-swap") and not os.path.exists("/opt/llama-swap/llama-swap"):
-        print("figyelem  a llama-swap nincs a szokásos helyen (/opt/llama-swap/llama-swap)")
+    if not shutil.which("llama-swap") and not os.path.exists(LLAMA_SWAP):
+        print(f"figyelem  a llama-swap nincs a szokásos helyen ({LLAMA_SWAP})")
     print("Minden rendben." if ok else "Van javítanivaló (lásd fent).")
     return 0 if ok else 1
 

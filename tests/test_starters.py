@@ -143,3 +143,18 @@ def test_run_wakes_the_host_first(tmp_path, monkeypatch):
     assert wait_for(lambda: docker.state()["dwyt-llama"] == "running")
     stop.set()
     t.join(5)
+
+
+def test_unraid_key_from_airouter_env_next_to_models_yaml(tmp_path, monkeypatch, unraid, capsys):
+    from dwyt_airouter import cli
+    monkeypatch.delenv("UNRAID_API_KEY", raising=False)
+    path = write_config(tmp_path, BASE.replace(
+        "starter: docker", f"starter: unraid\n  address: 127.0.0.1\n  unraid_url: {unraid.url}"))
+    env = tmp_path / "airouter.env"
+    env.write_text(unraid.key + "\n")  # the bare key, without the name: a clear error
+    assert cli.main(["--config", str(path), "check"]) == 2
+    assert "UNRAID_API_KEY=a-kulcs" in capsys.readouterr().err
+    env.write_text(f"# Unraid\nUNRAID_API_KEY={unraid.key}\n")
+    assert cli.main(["--config", str(path), "check"]) == 0
+    out = capsys.readouterr().out
+    assert "dwyt-llama: leállítva" in out and "Minden rendben" in out

@@ -15,7 +15,7 @@ import urllib.error
 import urllib.request
 from urllib.parse import urlsplit
 
-from .config import Config, GpuHost
+from .config import Config, GpuHost, secret
 
 
 class StarterError(Exception):
@@ -80,10 +80,10 @@ class Docker:
 class Unraid:
     """Unraid API (GraphQL), key with DOCKER read + update permission only (UNRAID_API_KEY)."""
 
-    def __init__(self, host: GpuHost) -> None:
+    def __init__(self, host: GpuHost, key: str | None = None) -> None:
         self.host = host
         self.url = host.unraid_url + "/graphql"
-        self.key = os.environ.get("UNRAID_API_KEY", "")
+        self.key = key if key is not None else os.environ.get("UNRAID_API_KEY", "")
         self.ctx = ssl._create_unverified_context() if host.unraid_insecure_tls else None  # noqa: S323
 
     def reachable(self) -> bool:
@@ -135,4 +135,6 @@ class Unraid:
 
 
 def starter_for(cfg: Config) -> Docker | Unraid:
-    return Unraid(cfg.gpu_host) if cfg.gpu_host.starter == "unraid" else Docker(cfg.gpu_host)
+    if cfg.gpu_host.starter == "unraid":
+        return Unraid(cfg.gpu_host, secret(cfg, "UNRAID_API_KEY"))
+    return Docker(cfg.gpu_host)

@@ -77,8 +77,16 @@ Ez az `/etc/dwyt-airouter/generated/` mappába írja a `llama-swap.yaml`-t, a `l
 
 ```bash
 install -m 600 -o airouter /dev/null /etc/dwyt-airouter/airouter.env
-echo 'UNRAID_API_KEY=IDE-A-KULCS' > /etc/dwyt-airouter/airouter.env
+nano /etc/dwyt-airouter/airouter.env
 ```
+
+A fájlba egyetlen sor kerül, a névvel együtt (nem csak a kulcs, és nem JSON):
+
+```
+UNRAID_API_KEY=a-kulcs-amit-az-unraid-adott
+```
+
+Szerkesztővel írd be, ne `echo`-val: így a kulcs nem kerül a parancssori előzményekbe.
 
 **Docker SSH-n át:** az `airouter` felhasználó kulccsal lép be a GPU-gépre. A GPU-gépen a belépő felhasználónak a `docker` csoportban kell lennie.
 
@@ -98,10 +106,10 @@ runuser -u airouter -- ssh -o StrictHostKeyChecking=accept-new FELHASZNÁLÓ@GPU
 **Ellenőrzés:**
 
 ```bash
-runuser -u airouter -- env $(cat /etc/dwyt-airouter/airouter.env 2>/dev/null) dwyt-airouter check
+runuser -u airouter -- dwyt-airouter check
 ```
 
-A GPU-gép elérhető, és mindkét konténer (`dwyt-llama`, `dwyt-whisper`) „leállítva” állapotú.
+A GPU-gép elérhető, és mindkét konténer (`dwyt-llama`, `dwyt-whisper`) „leállítva” állapotú. A program az Unraid-kulcsot a `models.yaml` melletti `airouter.env`-ből veszi, ha a környezetben nincs.
 
 ## 6. A kulcsok és a szolgáltatások
 
@@ -172,7 +180,7 @@ Ha ugyanazon a GPU-n a régi rendszer is fut, két llama-swap osztozna a GPU-n. 
 
 | Jel | Ok és teendő |
 | --- | --- |
-| `generate`: „Hiba a models.yaml-ban …” | A hiba helye a hibaüzenetben van (például `local_models[1].args`). |
+| „Beállítási hiba: …” | A hiba helye a hibaüzenetben van (például `local_models[1].args`, vagy az `airouter.env` hibás sora). |
 | A kérés 502-vel tér vissza, a naplóban „upstream command exited” | Az indító nem tudta elindítani a konténert. Futtasd a `dwyt-airouter check`-et az `airouter` felhasználóval (5. lépés). |
 | „Az Unraid API HTTP 401/403” | Rossz a kulcs, vagy nincs Docker update joga. |
 | A GPU-gép nem ébred fel | A MAC-cím, a broadcast-cím és a Wake-on-LAN a BIOS-ban. A `wait_s` lehet kevés: lassú gépnél 300 s. |

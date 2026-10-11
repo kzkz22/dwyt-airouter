@@ -129,6 +129,30 @@ class Config:
         return [c.container for c in self.containers()] + self.gpu_host.other_gpu_containers
 
 
+def secret(cfg: "Config", name: str) -> str:
+    """A secret from the environment, else from airouter.env next to models.yaml (KEY=value lines).
+
+    llama-swap's unit loads airouter.env into the environment of the starters; reading the file
+    here as well lets `dwyt-airouter check` and manual runs work without exporting it first."""
+    if os.environ.get(name):
+        return os.environ[name]
+    path = cfg.path.parent / "airouter.env"
+    try:
+        lines = path.read_text(encoding="utf-8").splitlines()
+    except OSError:
+        return ""
+    for n, line in enumerate(lines, 1):
+        line = line.strip()
+        if not line or line.startswith("#"):
+            continue
+        if "=" not in line:
+            raise ConfigError(f"{path} {n}. sora nem NÉV=érték alakú. A helyes sor: {name}=a-kulcs")
+        key, _, value = line.partition("=")
+        if key.strip().removeprefix("export ").strip() == name:
+            return value.strip().strip("\"'")
+    return ""
+
+
 # ---- reading ------------------------------------------------------------------------------
 
 class _Reader:

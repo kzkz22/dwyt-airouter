@@ -14,7 +14,7 @@ import shutil
 import sys
 
 from . import __version__, container, generate, wake
-from .config import DEFAULT_CONFIG, ConfigError, load
+from .config import DEFAULT_CONFIG, ConfigError, load, secret
 from .starters import StarterError, starter_for
 
 DEFAULT_OUT = "/etc/dwyt-airouter/generated"
@@ -43,7 +43,7 @@ def _check(cfg) -> int:
             except StarterError as exc:
                 report(False, f"konténer {c.container}: {exc}")
     if cfg.gpu_host.starter == "unraid":
-        report(bool(os.environ.get("UNRAID_API_KEY")), "UNRAID_API_KEY a környezetben")
+        report(bool(secret(cfg, "UNRAID_API_KEY")), "UNRAID_API_KEY (környezet vagy airouter.env)")
     if cfg.litellm and cfg.cloud_models:
         print(f"         a felhős kulcs ({cfg.cloud_key_env}) és a LITELLM_MASTER_KEY a litellm.env-ben legyen")
     if not shutil.which("llama-swap") and not os.path.exists("/opt/llama-swap/llama-swap"):
@@ -97,7 +97,7 @@ def main(argv: list[str] | None = None) -> int:
             return 0 if ok else 1
         return _check(cfg)
     except ConfigError as exc:
-        print(f"Hiba a models.yaml-ban: {exc}", file=sys.stderr)
+        print(f"Beállítási hiba: {exc}", file=sys.stderr)
         return 2
 
 

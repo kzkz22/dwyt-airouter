@@ -35,10 +35,12 @@ def test_generated_configs(tmp_path):
     assert "osszefoglalo-helyi" not in json.dumps(lite["router_settings"])  # own recordings never go to the cloud
 
     ini = generate.models_ini(cfg)
-    assert "[Qwen-Code]\nmodel = /models/gguf/Qwen-Q4.gguf\nmmproj = /models/gguf/mmproj-F16.gguf" in ini
+    assert ("[Qwen-Code]\nmodel = /models/gguf/org/Qwen-GGUF/Qwen-Q4.gguf\n"
+            "mmproj = /models/gguf/org/Qwen-GGUF/mmproj-F16.gguf") in ini
     assert "temp = 0.7" in ini and "[osszefoglalo]" not in ini
 
     dl = generate.downloads(cfg)
+    assert dl["version"] == 2  # each repo in its own folder (dwyt-gpu download)
     assert dl["files"] == [{"repo": "org/Qwen-GGUF", "path": "Qwen-Q4.gguf"},
                            {"repo": "org/Qwen-GGUF", "path": "mmproj-F16.gguf"}]
     assert [s["repo"] for s in dl["snapshots"]] == ["Systran/faster-whisper-large-v3",
@@ -55,7 +57,7 @@ litellm: {enabled: false}
     assert generate.llama_swap(cfg)["models"]["llama-server"]["aliases"] == ["Qwen-Gnrl", "Qwen-Code",
                                                                             "osszefoglalo-helyi"]
     ini = generate.models_ini(cfg)
-    assert '[osszefoglalo-helyi]\nmodel = /models/gguf/Qwen-Q4.gguf\nctx-size = 32768\ntemp = 0.7\n' \
+    assert '[osszefoglalo-helyi]\nmodel = /models/gguf/org/Qwen-GGUF/Qwen-Q4.gguf\nctx-size = 32768\ntemp = 0.7\n' \
            'chat-template-kwargs = {"enable_thinking": false}' in ini
     assert "litellm.yaml" not in generate.outputs(cfg)
 
@@ -116,3 +118,19 @@ def test_llama_swap_accepts_the_generated_config(tmp_path):
     proc = subprocess.run([os.environ["LLAMA_SWAP_BIN"], "--config", str(tmp_path / "llama-swap.yaml"), "-validate"],
                           capture_output=True, text=True, timeout=30)
     assert proc.returncode == 0, proc.stdout + proc.stderr
+
+
+def test_template_switches_are_checked_and_kept_when_a_name_turns_thinking_off(tmp_path):
+    text = BASE.split("cloud:")[0].replace(
+        "args: {ctx-size: 32768, temp: 0.7}",
+        "args: {ctx-size: 32768, temp: 0.7, chat-template-kwargs: '{\"preserve_thinking\": true}'}") + """
+names:
+  - {name: osszefoglalo-helyi, model: Qwen-Gnrl, thinking: false}
+litellm: {enabled: false}
+"""
+    ini = generate.models_ini(load(write_config(tmp_path, text)))
+    assert 'chat-template-kwargs = {"preserve_thinking": true, "enable_thinking": false}' in ini
+    assert '[Qwen-Gnrl]\nmodel = /models/gguf/org/Qwen-GGUF/Qwen-Q4.gguf\nctx-size = 32768\ntemp = 0.7\n' \
+           'chat-template-kwargs = {"preserve_thinking": true}' in ini
+    with pytest.raises(ConfigError, match="JSON-objektum"):
+        load(write_config(tmp_path, text.replace('\'{"preserve_thinking": true}\'', "'preserve_thinking'")))

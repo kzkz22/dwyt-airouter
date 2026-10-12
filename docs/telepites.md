@@ -62,7 +62,7 @@ A fájl magyarázó megjegyzésekkel indul. A lényeg:
   - `unraid`: Unraid API.
 
   Az `address` az a cím, ahol a konténerek portjai elérhetők. A `wake` rész a Wake-on-LAN, ha a GPU-gép magától nem fut.
-- **`local_models`:** név, Hugging Face-fájl (`szervezet/repó/fájl.gguf`), a llama-server kapcsolói (`ctx-size`, `temp` …) és a kontextus mérete.
+- **`local_models`:** név, Hugging Face-fájl (`szervezet/repó/fájl.gguf`), képes modellnél a vetítőfájl (`mmproj`, `vision: true`), a llama-server kapcsolói (`ctx-size`, `temp`, `spec-type` …) és a kontextus mérete. A GPU-gépen minden fájl a `gguf/<szervezet>/<repó>/` mappába kerül, így két repó azonos nevű fájlja (például `mmproj-F16.gguf`) nem ütközik.
 - **`cloud`, `names`:** felhős modellek és a stabil nevek. A saját felvételekhez (`osszefoglalo-helyi`) ne adj felhős tartalékot.
 
 ```bash

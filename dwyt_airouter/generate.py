@@ -42,11 +42,21 @@ def _ini_value(value: Any) -> str:
     return str(value)
 
 
-def _preset(name: str, model: LocalModel, extra: dict[str, Any] | None = None) -> list[str]:
-    lines = [f"[{name}]", f"model = {MODELS_IN_CONTAINER}/{model.file.split('/', 2)[2]}"]
+def container_path(hf_file: str) -> str:
+    """owner/repo/file.gguf -> where dwyt-gpu download puts it (downloads.json version 2): each repo has its
+    own folder, because repos often hold files of the same name (mmproj-F16.gguf)."""
+    return f"{MODELS_IN_CONTAINER}/{hf_file}"
+
+
+def _preset(name: str, model: LocalModel, thinking: bool | None = None) -> list[str]:
+    lines = [f"[{name}]", f"model = {container_path(model.file)}"]
     if model.mmproj:
-        lines.append(f"mmproj = {MODELS_IN_CONTAINER}/{model.mmproj.split('/', 2)[2]}")
-    for key, value in {**model.args, **(extra or {})}.items():
+        lines.append(f"mmproj = {container_path(model.mmproj)}")
+    args = dict(model.args)
+    if thinking is not None:  # keep the model's own template switches (preserve_thinking ...)
+        kwargs = json.loads(str(args.get("chat-template-kwargs") or "{}"))
+        args["chat-template-kwargs"] = json.dumps({**kwargs, "enable_thinking": thinking})
+    for key, value in args.items():
         lines.append(f"{key} = {_ini_value(value)}")
     return lines + [""]
 
@@ -68,9 +78,7 @@ def models_ini(cfg: Config) -> str:
         lines += _preset(m.name, m)
     if not cfg.litellm:
         for n in cfg.names:
-            extra = {"chat-template-kwargs": json.dumps({"enable_thinking": n.thinking})} \
-                if n.thinking is not None else None
-            lines += _preset(n.name, local[n.model], extra)
+            lines += _preset(n.name, local[n.model], n.thinking)
     return "\n".join(lines)
 
 
@@ -162,7 +170,7 @@ def downloads(cfg: Config) -> dict[str, Any]:
         if cfg.diarization:
             snapshots.append({"repo": DIARIZATION_REPO, "gated": True})
         snapshots += [{"repo": p} for p in cfg.prefetch]
-    return {"version": 1, "files": files, "snapshots": snapshots}
+    return {"version": 2, "files": files, "snapshots": snapshots}  # 2: files under gguf/<owner>/<repo>/
 
 
 class _NoAliases(yaml.SafeDumper):

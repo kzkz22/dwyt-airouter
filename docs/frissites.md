@@ -17,6 +17,22 @@ A llama-swap a `--watch-config` miatt magától újratölti a `llama-swap.yaml`-
 2. Ha a `models.ini` vagy a `downloads.json` változott: másold át a GPU-gépre, és ott futtasd a `dwyt-gpu download`-ot (dwyt-gpu, frissites.md).
 3. Ha a `litellm.yaml` változott: `systemctl restart dwyt-litellm`.
 
+## Frissítés a 0.2-re (modellfájlok repónként külön mappában)
+
+Két Hugging Face-repóban gyakran ugyanolyan nevű fájl van (például `mmproj-F16.gguf`), és a régi elrendezésben a második felülírta volna az elsőt. A 0.2-től minden fájl a GPU-gépen a `gguf/<szervezet>/<repó>/` mappába kerül, a `models.ini` is oda mutat, a `downloads.json` pedig 2-es változatú.
+
+1. **Előbb a GPU-gépen** frissítsd a `dwyt-gpu`-t (a régi letöltő a 2-es listát nem fogadja el): dwyt-gpu, frissites.md.
+2. Itt a program frissítése (fent), majd `dwyt-airouter generate`.
+3. A `models.ini`-t és a `downloads.json`-t másold a GPU-gépre, és ott `dwyt-gpu download`. A már letöltött fájlokat a régi helyükről nem veszi át: vagy újra letölti őket, vagy előtte kézzel áthelyezed őket az új mappába (`gguf/unsloth/<repó>/`).
+
+A `chat-template-kwargs` értéke egy JSON-objektum szövegként, egyszeres idézőjelben:
+
+```yaml
+chat-template-kwargs: '{"preserve_thinking": true, "reasoning_effort": "medium"}'
+```
+
+Ha egy stabil név (LiteLLM nélkül) kikapcsolja a gondolkodást, az `enable_thinking` ehhez adódik hozzá, a modell saját kapcsolói megmaradnak.
+
 ## llama-swap
 
 A kipróbált változat a v262. Újabbra váltás:

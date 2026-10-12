@@ -5,6 +5,7 @@ presets (models.ini) and the GPU host's download list. See models.example.yaml.
 """
 from __future__ import annotations
 
+import json
 import os
 import re
 from dataclasses import dataclass, field
@@ -199,6 +200,13 @@ def _args(data: dict, where: str) -> dict[str, Any]:
             raise ConfigError(f"{where}: ezt a kapcsolót itt nem lehet megadni: {key}")
         if not isinstance(value, (str, int, float, bool)) or (isinstance(value, str) and "\n" in value):
             raise ConfigError(f"{where}.{key}: egyszerű érték kell (szöveg, szám, igen/nem).")
+        if key == "chat-template-kwargs":
+            try:
+                ok = isinstance(json.loads(str(value)), dict)
+            except ValueError:
+                ok = False
+            if not ok:
+                raise ConfigError(f"{where}.{key}: JSON-objektum kell, például '{{\"preserve_thinking\": true}}'.")
         out[key] = value
     return out
 

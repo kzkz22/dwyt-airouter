@@ -22,6 +22,9 @@ real (faked-ML) Whisper worker; not yet run against a real GPU host. Source of t
 | `dwyt_airouter/wake.py` | Wake-on-LAN magic packet, wait until reachable |
 | `deploy/` | systemd units (`dwyt-llama-swap`, `dwyt-litellm`, user `airouter`), env examples |
 
+GGUF files live on the GPU host under `gguf/<owner>/<repo>/<path>` (downloads.json version 2; repos often share
+file names such as `mmproj-F16.gguf`); models.ini points there. `chat-template-kwargs` is a JSON object string.
+
 Pinned: llama-swap v262 (docs, CI `-validate`), LiteLLM 1.104.2. `llama-swap.yaml` keeps `${PID}` literal for
 llama-swap's macro. Without LiteLLM, stable names become llama-server presets (no fallback).
 

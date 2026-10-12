@@ -71,6 +71,10 @@ names:
   - name: osszefoglalo-helyi     # saját felvételek: csak helyi, felhős tartalék nélkül
     model: Qwen3.6-35B-A3B-Gnrl
     thinking: false
+  - name: kerdes                 # dwyt: kérdések a könyvtárról (gondolkodással); a futtatón llm_ask_model
+    model: Qwen3.6-35B-A3B-Gnrl
+    thinking: true
+    fallback: cloud/qwen3.8-flash
 
 # További GPU-s konténerek ugyanabban a sorban (például a régi rendszer workere).
 # extra_containers:

@@ -63,7 +63,7 @@ A fájl magyarázó megjegyzésekkel indul. A lényeg:
 
   Az `address` az a cím, ahol a konténerek portjai elérhetők. A `wake` rész a Wake-on-LAN, ha a GPU-gép magától nem fut.
 - **`local_models`:** név, Hugging Face-fájl (`szervezet/repó/fájl.gguf`), képes modellnél a vetítőfájl (`mmproj`, `vision: true`), a llama-server kapcsolói (`ctx-size`, `temp`, `spec-type` …) és a kontextus mérete. A GPU-gépen minden fájl a `gguf/<szervezet>/<repó>/` mappába kerül, így két repó azonos nevű fájlja (például `mmproj-F16.gguf`) nem ütközik.
-- **`cloud`, `names`:** felhős modellek és a stabil nevek. A saját felvételekhez (`osszefoglalo-helyi`) ne adj felhős tartalékot.
+- **`cloud`, `names`:** felhős modellek és a stabil nevek. A saját felvételekhez (`osszefoglalo-helyi`) ne adj felhős tartalékot. A `thinking` csak az adott névre vonatkozik: a helyi modellek a saját nevükön változatlanul elérhetők. A dwyt nevei: `osszefoglalo` és `osszefoglalo-helyi` (összefoglaló, fordítás, gondolkodás nélkül), `kerdes` (kérdések a könyvtárról, gondolkodással).
 
 ```bash
 dwyt-airouter generate
@@ -155,6 +155,7 @@ dwyt-runner config set llm_url http://AI-ROUTER-IP:4000/v1
 dwyt-runner config set llm_key A-LITELLM_MASTER_KEY-ÉRTÉKE
 dwyt-runner config set llm_public_model osszefoglalo
 dwyt-runner config set llm_private_model osszefoglalo-helyi
+dwyt-runner config set llm_ask_model kerdes                    # a központban feltett kérdésekhez (gondolkodással)
 systemctl restart dwyt-runner      # a képességeket induláskor jelenti be
 ```
 

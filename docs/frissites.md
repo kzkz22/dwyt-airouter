@@ -33,6 +33,19 @@ chat-template-kwargs: '{"preserve_thinking": true, "reasoning_effort": "medium"}
 
 Ha egy stabil név (LiteLLM nélkül) kikapcsolja a gondolkodást, az `enable_thinking` ehhez adódik hozzá, a modell saját kapcsolói megmaradnak.
 
+## A `kerdes` név (dwyt 6. kör)
+
+A dwyt központjában feltett kérdésekhez a futtató a `kerdes` nevet használja (gondolkodással, felhős tartalékkal). Ha a `models.yaml`-od régebbi, a `names:` alá vedd fel:
+
+```yaml
+  - name: kerdes
+    model: Qwen3.6-35B-A3B-Gnrl
+    thinking: true
+    fallback: cloud/qwen3.8-flash
+```
+
+Utána `dwyt-airouter generate`, `systemctl restart dwyt-litellm`, a futtatón `dwyt-runner config set llm_ask_model kerdes`.
+
 ## llama-swap
 
 A kipróbált változat a v262. Újabbra váltás:

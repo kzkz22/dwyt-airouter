@@ -16,7 +16,7 @@ real (faked-ML) Whisper worker; not yet run against a real GPU host. Source of t
 | Path | Role |
 | --- | --- |
 | `dwyt_airouter/config.py` | `models.yaml` reader with strict validation (Hungarian errors naming the key) |
-| `dwyt_airouter/generate.py` | llama-swap.yaml, litellm.yaml, models.ini (llama-server router presets), downloads.json, ports.env |
+| `dwyt_airouter/generate.py` | llama-swap.yaml, litellm.yaml (each name with `model_info.dwyt` = `describe()`: what runs behind it, for dwyt's Runners page), models.ini (llama-server router presets), downloads.json, ports.env |
 | `dwyt_airouter/starters.py` | Docker (local / `-H ssh://`) and Unraid GraphQL: state/start/stop of existing containers |
 | `dwyt_airouter/container.py` | llama-swap `cmd`/`cmdStop`: wake, stop other GPU containers, start, stay alive while running |
 | `dwyt_airouter/wake.py` | Wake-on-LAN magic packet, wait until reachable |

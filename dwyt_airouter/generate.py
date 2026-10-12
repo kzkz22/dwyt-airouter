@@ -120,6 +120,86 @@ def _thinking_params(model: str, thinking: bool | None, local: bool) -> dict[str
     return {"reasoning_effort": "medium" if thinking else "none"}
 
 
+# ---- what each name means, for the users of the runner (dwyt central's Runners page) ------------
+
+KNOWN_NAMES = {
+    "auto": "Általános használat; ha a GPU-gép nem érhető el, a felhőben válaszol",
+    "osszefoglalo": "Nyilvános videók összefoglalója és fordítása",
+    "osszefoglalo-helyi": "Saját felvételek összefoglalója, fordítása és kérdései; csak helyi",
+    "kerdes": "Kérdések a videókról és a könyvtárról",
+}
+PRESET_LABELS = {"code": "kódoló beállítás", "gnrl": "általános beállítás", "general": "általános beállítás"}
+
+
+def _local_label(name: str) -> str:
+    """Qwen3.6-35B-A3B-Gnrl -> "Qwen3.6-35B-A3B, általános beállítás"."""
+    base, _, suffix = name.rpartition("-")
+    label = PRESET_LABELS.get(suffix.lower())
+    return f"{base}, {label}" if base and label else name
+
+
+def _cloud_label(model: str) -> tuple[str, str]:
+    """openrouter/qwen/qwen3.8-flash -> ("qwen/qwen3.8-flash", "OpenRouter")."""
+    provider, _, rest = model.partition("/")
+    names = {"openrouter": "OpenRouter", "openai": "OpenAI", "anthropic": "Anthropic", "gemini": "Google"}
+    return (rest or model), names.get(provider, provider)
+
+
+def _auto_description(name: str, target_local: bool, target: str) -> str:
+    if name in KNOWN_NAMES:
+        return KNOWN_NAMES[name]
+    if name.startswith("osszefoglalo"):
+        return "Összefoglaló és fordítás, választható" + ("; csak helyi" if name.endswith("-helyi") else "")
+    if name.startswith("kerdes"):
+        return "Kérdések, választható" + ("; csak helyi" if name.endswith("-helyi") else "")
+    if target_local:
+        suffix = name.rpartition("-")[2].lower()
+        return {"code": "Kódolás", "gnrl": "Általános feladatok", "general": "Általános feladatok"}.get(
+            suffix, "Helyi modell")
+    return "Felhős modell"
+
+
+def _thinking_of(cfg: Config, model: str, thinking: bool | None) -> tuple[bool | None, int | None]:
+    """(thinking on?, its token budget) as the name will actually run."""
+    local = next((m for m in cfg.local_models if m.name == model), None)
+    if local is not None:
+        budget = local.args.get("reasoning-budget")
+        budget = int(budget) if isinstance(budget, (int, float)) or str(budget).isdigit() else None
+        on = thinking if thinking is not None else (True if budget else None)
+        return on, (budget if on else None)
+    cloud = next((m for m in cfg.cloud_models if m.name == model), None)
+    return (thinking if thinking is not None else (cloud.thinking if cloud else None)), None
+
+
+def describe(cfg: Config, name: str) -> dict[str, Any]:
+    """The `dwyt` block of a name's model_info: what runs behind it and what happens without the GPU host."""
+    local = {m.name: m for m in cfg.local_models}
+    cloud = {m.name: m for m in cfg.cloud_models}
+    stable = {n.name: n for n in cfg.names}
+    n = stable.get(name)
+    model, thinking, fallback, own = (n.model, n.thinking, n.fallback, n.description) if n else (name, None, [], "")
+    if model in local:
+        m = local[model]
+        out: dict[str, Any] = {"where": "local", "target": m.name, "target_label": _local_label(m.name),
+                               "context": m.max_input_tokens, "vision": m.vision}
+        own = own or m.description
+    else:
+        c = cloud[model]
+        label, provider = _cloud_label(c.model)
+        out = {"where": "cloud", "target": c.model, "target_label": label, "provider": provider,
+               "context": c.max_input_tokens}
+        own = own or c.description
+        thinking = thinking if thinking is not None else c.thinking
+    on, budget = _thinking_of(cfg, model, thinking)
+    out.update(description=own or _auto_description(name, model in local, model), thinking=on,
+               thinking_budget=budget, fallback=[])
+    for f in fallback:
+        target = describe(cfg, f)
+        out["fallback"].append({k: target.get(k) for k in ("target", "target_label", "where", "provider", "thinking")}
+                               | {"name": f})
+    return {k: v for k, v in out.items() if v is not None}
+
+
 def litellm(cfg: Config) -> dict[str, Any]:
     api_base = f"http://127.0.0.1:{cfg.swap_port}/v1"
     entries: list[dict[str, Any]] = []
@@ -145,8 +225,7 @@ def litellm(cfg: Config) -> dict[str, Any]:
         if n.fallback:
             fallbacks.append({n.name: n.fallback})
     for e in entries:
-        if not e.get("model_info"):
-            e.pop("model_info", None)
+        e["model_info"] = {**(e.get("model_info") or {}), "dwyt": describe(cfg, e["model_name"])}
     return {
         "model_list": entries,
         "router_settings": {"fallbacks": fallbacks, "num_retries": 0,  # a switched-off GPU host does not get better

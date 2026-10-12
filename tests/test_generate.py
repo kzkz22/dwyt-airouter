@@ -134,3 +134,26 @@ litellm: {enabled: false}
            'chat-template-kwargs = {"preserve_thinking": true}' in ini
     with pytest.raises(ConfigError, match="JSON-objektum"):
         load(write_config(tmp_path, text.replace('\'{"preserve_thinking": true}\'', "'preserve_thinking'")))
+
+
+def test_every_name_says_what_runs_behind_it(tmp_path):
+    text = BASE.replace("args: {ctx-size: 32768, temp: 0.7}",
+                        "args: {ctx-size: 32768, temp: 0.7, reasoning-budget: 2048}").replace(
+        "  - {name: osszefoglalo-helyi, model: Qwen-Gnrl, thinking: false}",
+        "  - {name: osszefoglalo-helyi, model: Qwen-Gnrl, thinking: false}\n"
+        "  - {name: kerdes, model: Qwen-Gnrl, thinking: true, fallback: cloud/flash, description: Saját leírás}")
+    cfg = load(write_config(tmp_path, text))
+    info = {e["model_name"]: e["model_info"]["dwyt"] for e in generate.litellm(cfg)["model_list"]}
+    assert info["Qwen-Gnrl"] == {"where": "local", "target": "Qwen-Gnrl", "target_label": "Qwen, általános beállítás",
+                                 "context": 32768, "vision": False, "description": "Általános feladatok",
+                                 "thinking": True, "thinking_budget": 2048, "fallback": []}
+    assert info["osszefoglalo"]["thinking"] is False and "thinking_budget" not in info["osszefoglalo"]
+    assert info["osszefoglalo"]["description"] == "Nyilvános videók összefoglalója és fordítása"
+    assert info["osszefoglalo"]["fallback"] == [{"target": "openrouter/qwen/flash", "target_label": "qwen/flash",
+                                                 "where": "cloud", "provider": "OpenRouter", "thinking": False,
+                                                 "name": "cloud/flash-gyors"}]
+    assert info["osszefoglalo-helyi"]["fallback"] == [] and "csak helyi" in info["osszefoglalo-helyi"]["description"]
+    assert info["kerdes"]["description"] == "Saját leírás" and info["kerdes"]["thinking_budget"] == 2048
+    assert info["cloud/flash"]["where"] == "cloud" and info["cloud/flash"]["provider"] == "OpenRouter"
+    with pytest.raises(ConfigError, match="200 karakter"):
+        load(write_config(tmp_path, text.replace("Saját leírás", "x" * 201)))

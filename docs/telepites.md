@@ -63,7 +63,7 @@ A fájl magyarázó megjegyzésekkel indul. A lényeg:
 
   Az `address` az a cím, ahol a konténerek portjai elérhetők. A `wake` rész a Wake-on-LAN, ha a GPU-gép magától nem fut.
 - **`local_models`:** név, Hugging Face-fájl (`szervezet/repó/fájl.gguf`), képes modellnél a vetítőfájl (`mmproj`, `vision: true`), a llama-server kapcsolói (`ctx-size`, `temp`, `spec-type` …) és a kontextus mérete. A GPU-gépen minden fájl a `gguf/<szervezet>/<repó>/` mappába kerül, így két repó azonos nevű fájlja (például `mmproj-F16.gguf`) nem ütközik.
-- **`cloud`, `names`:** felhős modellek és a stabil nevek. A saját felvételekhez (`osszefoglalo-helyi`) ne adj felhős tartalékot. A `thinking` csak az adott névre vonatkozik: a helyi modellek a saját nevükön változatlanul elérhetők. A dwyt nevei: `osszefoglalo` és `osszefoglalo-helyi` (összefoglaló, fordítás, gondolkodás nélkül), `kerdes` (kérdések a könyvtárról, gondolkodással).
+- **`cloud`, `names`:** felhős modellek és a stabil nevek. A saját felvételekhez (`osszefoglalo-helyi`) ne adj felhős tartalékot. A `thinking` csak az adott névre vonatkozik: a helyi modellek a saját nevükön változatlanul elérhetők. A dwyt nevei: `osszefoglalo` és `osszefoglalo-helyi` (összefoglaló, fordítás, gondolkodás nélkül), `kerdes` (kérdések a könyvtárról, gondolkodással). A `description:` kulccsal (legfeljebb 200 karakter) megírhatod, mire való egy név; ha nincs, a `generate` magától ír leírást. A dwyt Futtatók oldala és a modellválasztók ezt mutatják, a modellel, a gondolkodással és a tartalékkal együtt (a LiteLLM `/model/info` válaszából, `model_info.dwyt`).
 
 ```bash
 dwyt-airouter generate

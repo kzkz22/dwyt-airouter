@@ -75,6 +75,7 @@ class LocalModel:
     max_input_tokens: int | None = None
     max_output_tokens: int | None = None
     vision: bool = False
+    description: str = ""
 
 
 @dataclass
@@ -84,6 +85,7 @@ class CloudModel:
     thinking: bool | None = None
     max_input_tokens: int | None = None
     max_output_tokens: int | None = None
+    description: str = ""
 
 
 @dataclass
@@ -92,6 +94,7 @@ class StableName:
     model: str
     thinking: bool | None = None
     fallback: list[str] = field(default_factory=list)
+    description: str = ""
 
 
 @dataclass
@@ -211,6 +214,14 @@ def _args(data: dict, where: str) -> dict[str, Any]:
     return out
 
 
+def _description(r: _Reader) -> str:
+    """Optional `description`: what the name is for, shown to the users of the runner (dwyt central)."""
+    text = " ".join(str(r.get("description", str, "")).split())
+    if len(text) > 200:
+        raise ConfigError(f"{r.where}.description: legfeljebb 200 karakter lehet.")
+    return text
+
+
 def _container(r: _Reader, entry: str, default_name: str, default_port: int, default_ttl: int,
                unlisted: bool) -> Container:
     c = Container(entry=r.get("entry", str, entry), container=r.get("container", str, default_name),
@@ -306,7 +317,7 @@ def load(path: str | Path | None = None) -> Config:
         m = LocalModel(name=mr.get("name", str, required=True), file=mr.get("file", str, required=True),
                        mmproj=mr.get("mmproj", str, ""), args=_args(mr.get("args", dict, {}), f"{mr.where}.args"),
                        max_input_tokens=mr.get("max_input_tokens", int), max_output_tokens=mr.get("max_output_tokens", int),
-                       vision=mr.get("vision", bool, False))
+                       vision=mr.get("vision", bool, False), description=_description(mr))
         mr.done()
         for f in [m.file] + ([m.mmproj] if m.mmproj else []):
             if not HF_FILE.match(f) or ".." in f or not f.endswith(".gguf"):
@@ -320,7 +331,8 @@ def load(path: str | Path | None = None) -> Config:
         mr = _Reader(item, f"cloud.models[{i}]")
         cloud_models.append(CloudModel(name=mr.get("name", str, required=True), model=mr.get("model", str, required=True),
                                        thinking=mr.get("thinking", bool), max_input_tokens=mr.get("max_input_tokens", int),
-                                       max_output_tokens=mr.get("max_output_tokens", int)))
+                                       max_output_tokens=mr.get("max_output_tokens", int),
+                                       description=_description(mr)))
         mr.done()
     cr.done()
     if not re.match(r"^[A-Z][A-Z0-9_]*$", cloud_key_env):
@@ -332,7 +344,8 @@ def load(path: str | Path | None = None) -> Config:
         fallback = nr.get("fallback", (str, list), [])
         names.append(StableName(name=nr.get("name", str, required=True), model=nr.get("model", str, required=True),
                                 thinking=nr.get("thinking", bool),
-                                fallback=[fallback] if isinstance(fallback, str) else [str(f) for f in fallback]))
+                                fallback=[fallback] if isinstance(fallback, str) else [str(f) for f in fallback],
+                                description=_description(nr)))
         nr.done()
 
     lt = top.sub("litellm")

@@ -46,6 +46,20 @@ A dwyt központjában feltett kérdésekhez a futtató a `kerdes` nevet használ
 
 Utána `dwyt-airouter generate`, `systemctl restart dwyt-litellm`, a futtatón `dwyt-runner config set llm_ask_model kerdes`.
 
+## Modell-leírás a dwyt-nek (0.3)
+
+A 0.3-tól a `generate` a `litellm.yaml` minden nevéhez leírást ír (`model_info.dwyt`): mire való, melyik modell fut mögötte, helyben vagy felhőben, gondolkodással vagy anélkül, és mi válaszol, ha a GPU-gép ki van kapcsolva. A dwyt-futtató (0.7-től) ezt küldi a központnak, a Futtatók oldal ebből mutatja a modelleket.
+
+1. A program frissítése (fent), majd `dwyt-airouter generate` és `systemctl restart dwyt-litellm`.
+2. Ha egy név leírását magad akarod megadni, a `models.yaml`-ban a névhez írd: `description: "Kérdések a videókról, alapos válasz."`, majd újra `generate` és újraindítás.
+
+Ellenőrzés:
+
+```bash
+KEY=$(sed -n 's/^LITELLM_MASTER_KEY=//p' /etc/dwyt-airouter/litellm.env)
+curl -s -H "Authorization: Bearer $KEY" http://127.0.0.1:4000/v1/model/info | python3 -m json.tool | grep -A4 '"dwyt"'
+```
+
 ## llama-swap
 
 A kipróbált változat a v262. Újabbra váltás:

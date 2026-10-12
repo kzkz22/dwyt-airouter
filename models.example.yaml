@@ -60,6 +60,8 @@ cloud:
       thinking: false
 
 # Stabil nevek a klienseknek: célmodell, gondolkodás ki/be, tartalék (csak LiteLLM-mel).
+# description: (helyi, felhős modellnél és stabil névnél is) mire való, legfeljebb 200 karakter; a dwyt
+# Futtatók oldala mutatja. Ha nincs megadva, a generate magától ír egyet.
 names:
   - name: auto
     model: Qwen3.6-35B-A3B-Code
